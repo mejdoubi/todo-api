@@ -177,14 +177,14 @@ describe('PATCH /todos/:id', () => {
 
   it('should return 404 if todo not found', (done) => {
     request(app)
-      .delete(`/todos/${new ObjectID().toHexString()}`)
+      .patch(`/todos/${new ObjectID().toHexString()}`)
       .expect(404)
       .end(done);
   });
 
   it('should return 404 for non-object ids', (done) => {
     request(app)
-      .delete('/todos/123abc')
+      .patch('/todos/123abc')
       .expect(404)
       .end(done);
   });
