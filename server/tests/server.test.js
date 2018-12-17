@@ -268,8 +268,8 @@ describe('POST /users', () => {
       .send({email, password})
       .expect(200)
       .expect((res) => {
-        expect(res.headers['x-auth']).toBeDefined();
-        expect(res.body._id).toBeDefined();
+        expect(res.headers['x-auth']).toBeTruthy();
+        expect(res.body._id).toBeTruthy();
         expect(res.body.email).toBe(email);
       })
       .end((err) => {
@@ -317,7 +317,7 @@ describe('POST /users/login', () => {
       })
       .expect(200)
       .expect((res) => {
-        expect(res.headers['x-auth']).toBeDefined();
+        expect(res.headers['x-auth']).toBeTruthy();
       })
       .end((err, res) => {
         if (err) {
@@ -325,8 +325,10 @@ describe('POST /users/login', () => {
         }
 
         User.findById(users[1]._id).then((user) => {
-          expect(user.tokens[1]).toHaveProperty('access', 'auth');
-          expect(user.tokens[1]).toHaveProperty('token', res.headers['x-auth']);
+          expect(user.toObject().tokens[1]).toMatchObject({
+            access: 'auth',
+            token: res.headers['x-auth']
+          });
           done();
         }).catch((e) => done(e));
       });
@@ -341,7 +343,7 @@ describe('POST /users/login', () => {
       })
       .expect(400)
       .expect((res) => {
-        expect(res.headers['x-auth']).not.toBeDefined();
+        expect(res.headers['x-auth']).toBeFalsy();
       })
       .end((err, res) => {
         if (err) {
@@ -349,7 +351,7 @@ describe('POST /users/login', () => {
         }
 
         User.findById(users[1]._id).then((user) => {
-          expect(user.tokens).toHaveLength(1);
+          expect(user.tokens.length).toBe(1);
           done();
         }).catch((e) => done(e));
       });
@@ -368,7 +370,7 @@ describe('DELETE /users/me/token', () => {
         }
 
         User.findById(users[0]._id).then((user) => {
-          expect(user.tokens).toHaveLength(0);
+          expect(user.tokens.length).toBe(0);
           done();
         }).catch((e) => done(e));
       });
