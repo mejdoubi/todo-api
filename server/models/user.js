@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const _ = require('lodash');
 const bcrypt = require('bcryptjs');
 
-var UserSchema = new mongoose.Schema({
+const UserSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
@@ -35,16 +35,16 @@ var UserSchema = new mongoose.Schema({
 
 // overriding toJSON method of UserSchema
 UserSchema.methods.toJSON = function() {
-  var user = this;
-  var userObject = user.toObject();
+  const user = this;
+  const userObject = user.toObject();
 
   return _.pick(userObject, ['_id', 'email']);
 };
 
-UserSchema.methods.generateAuthToken = function() {
-  var user = this;
-  var access = 'auth';
-  var token = jwt.sign({
+UserSchema.methods.generateAuthToken = async function() {
+  const user = this;
+  const access = 'auth';
+  const token = jwt.sign({
     _id: user._id.toHexString(),
     access
   }, process.env.JWT_SECRET).toString();
@@ -52,13 +52,12 @@ UserSchema.methods.generateAuthToken = function() {
     access,
     token
   }]);
-  return user.save().then(() => {
-    return token;
-  });
+  await user.save();
+  return token;
 };
 
 UserSchema.methods.removeToken = function(token) {
-  var user = this;
+  const user = this;
 
   return user.updateOne({
     $pull: {
@@ -68,8 +67,8 @@ UserSchema.methods.removeToken = function(token) {
 };
 
 UserSchema.statics.findByToken = function(token) {
-  var User = this;
-  var decoded;
+  const User = this;
+  let decoded;
 
   try {
     decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -84,10 +83,11 @@ UserSchema.statics.findByToken = function(token) {
   });
 };
 
-UserSchema.statics.findByCredentials = function(email, password) {
-  var User = this;
+UserSchema.statics.findByCredentials = async function(email, password) {
+  const User = this;
 
-  return User.findOne({email}).then((user) => {
+  try {
+    const user = await User.findOne({email});
     if (!user) {
       return Promise.reject();
     }
@@ -101,11 +101,13 @@ UserSchema.statics.findByCredentials = function(email, password) {
         }
       });
     });
-  });
+  } catch (e) {
+    throw new Error(e);
+  }
 };
 
 UserSchema.pre('save', function(next) {
-  var user = this;
+  let user = this;
 
   if (user.isModified('password')) {
     bcrypt.genSalt(10, (err, salt) => {
@@ -119,7 +121,7 @@ UserSchema.pre('save', function(next) {
   }
 });
 
-var User = mongoose.model('User', UserSchema);
+const User = mongoose.model('User', UserSchema);
 
 module.exports = {
   User

@@ -13,7 +13,7 @@ beforeEach(populateTodos);
 
 describe('POST /todos', () => {
   it('should create a new todo', (done) => {
-    var text = 'Test todo text';
+    const text = 'Test todo text';
 
     request(app)
       .post('/todos')
@@ -23,16 +23,19 @@ describe('POST /todos', () => {
       .expect((res) => {
         expect(res.body.text).toBe(text);
       })
-      .end((err, res) => {
+      .end(async (err, res) => {
         if (err) {
           return done(err);
         }
 
-        Todo.find({text}).then((todos) => {
+        try {
+          const todos = await Todo.find({text});
           expect(todos.length).toBe(1);
           expect(todos[0].text).toBe(text);
           done();
-        }).catch((e) => done(e));
+        } catch (e) {
+          done(e);
+        }
       });
   });
 
@@ -42,15 +45,18 @@ describe('POST /todos', () => {
       .set('x-auth', users[0].tokens[0].token)
       .send({})
       .expect(400)
-      .end((err, res) => {
+      .end(async (err, res) => {
         if (err) {
           return done(err);
         }
 
-        Todo.find().then((todos) => {
+        try {
+          const todos = await Todo.find();
           expect(todos.length).toBe(2);
           done();
-        }).catch((e) => done(e));
+        } catch (e) {
+          done(e);
+        }
       });
   });
 });
@@ -107,7 +113,7 @@ describe('GET /todos/:id', () => {
 
 describe('DELETE /todos/:id', () => {
   it('should remove a todo', (done) => {
-    var hexId = todos[1]._id.toHexString();
+    const hexId = todos[1]._id.toHexString();
     request(app)
       .delete(`/todos/${hexId}`)
       .set('x-auth', users[1].tokens[0].token)
@@ -115,33 +121,39 @@ describe('DELETE /todos/:id', () => {
       .expect((res) => {
         expect(res.body.todo._id).toBe(hexId);
       })
-      .end((err, res) => {
+      .end(async (err, res) => {
         if (err) {
           return done(err);
         }
 
-        Todo.findById(hexId).then((todo) => {
+        try {
+          const todo = await Todo.findById(hexId);
           expect(todo).toBeFalsy();
           done();
-        }).catch((e) => done(e));
+        } catch (e) {
+          done(e);
+        }
       });
   });
 
   it('should not remove a todo owned by another user', (done) => {
-    var hexId = todos[0]._id.toHexString();
+    const hexId = todos[0]._id.toHexString();
     request(app)
       .delete(`/todos/${hexId}`)
       .set('x-auth', users[1].tokens[0].token)
       .expect(404)
-      .end((err, res) => {
+      .end(async (err, res) => {
         if (err) {
           return done(err);
         }
 
-        Todo.findById(hexId).then((todo) => {
+        try {
+          const todo = await Todo.findById(hexId);
           expect(todo).toBeTruthy();
           done();
-        }).catch((e) => done(e));
+        } catch (e) {
+          done(e);
+        }
       });
   });
 
@@ -164,11 +176,11 @@ describe('DELETE /todos/:id', () => {
 
 describe('PATCH /todos/:id', () => {
   it('should update a todo', (done) => {
-    var hexId = todos[0]._id.toHexString();
-    var todo = {
+    const hexId = todos[0]._id.toHexString();
+    const todo = {
       text: 'First test todo updated',
       completed: true
-    }
+    };
 
     request(app)
       .patch(`/todos/${hexId}`)
@@ -184,11 +196,11 @@ describe('PATCH /todos/:id', () => {
   });
 
   it('should not update a todo owned by another user', (done) => {
-    var hexId = todos[0]._id.toHexString();
-    var todo = {
+    const hexId = todos[0]._id.toHexString();
+    const todo = {
       text: 'First test todo updated',
       completed: true
-    }
+    };
 
     request(app)
       .patch(`/todos/${hexId}`)
@@ -199,11 +211,11 @@ describe('PATCH /todos/:id', () => {
   });
 
   it('should clear completedAt when todo is not completed', (done) => {
-    var hexId = todos[1]._id.toHexString();
-    var todo = {
+    const hexId = todos[1]._id.toHexString();
+    const todo = {
       text: 'Second test todo updated',
       completed: false
-    }
+    };
 
     request(app)
       .patch(`/todos/${hexId}`)
@@ -261,8 +273,8 @@ describe('GET /users/me', () => {
 
 describe('POST /users', () => {
   it('should create a user', (done) => {
-    var email = 'o.mejdoubi@outlook.com';
-    var password = 'mypassword';
+    const email = 'o.mejdoubi@outlook.com';
+    const password = 'mypassword';
     request(app)
       .post('/users')
       .send({email, password})
@@ -272,22 +284,25 @@ describe('POST /users', () => {
         expect(res.body._id).toBeTruthy();
         expect(res.body.email).toBe(email);
       })
-      .end((err) => {
+      .end(async (err) => {
         if (err) {
           return done(err);
         }
 
-        User.findOne({email}).then((user) => {
+        try {
+          const user = await User.findOne({email});
           expect(user).toBeDefined();
           expect(user.password).not.toBe(password);
           done();
-        }).catch((e) => done(e));
+        } catch (e) {
+          done(e);
+        }
       });
   });
 
   it('should return validation errors if request invalid', (done) => {
-    var email = 'mej';
-    var password = 'myp';
+    const email = 'mej';
+    const password = 'myp';
     request(app)
       .post('/users')
       .send({email, password})
@@ -319,18 +334,21 @@ describe('POST /users/login', () => {
       .expect((res) => {
         expect(res.headers['x-auth']).toBeTruthy();
       })
-      .end((err, res) => {
+      .end(async (err, res) => {
         if (err) {
           return done(err);
         }
 
-        User.findById(users[1]._id).then((user) => {
+        try {
+          const user = await User.findById(users[1]._id);
           expect(user.toObject().tokens[1]).toMatchObject({
             access: 'auth',
             token: res.headers['x-auth']
           });
           done();
-        }).catch((e) => done(e));
+        } catch (e) {
+          done(e);
+        }
       });
   });
 
@@ -345,15 +363,18 @@ describe('POST /users/login', () => {
       .expect((res) => {
         expect(res.headers['x-auth']).toBeFalsy();
       })
-      .end((err, res) => {
+      .end(async (err, res) => {
         if (err) {
           return done(err);
         }
 
-        User.findById(users[1]._id).then((user) => {
+        try {
+          const user = await User.findById(users[1]._id);
           expect(user.tokens.length).toBe(1);
           done();
-        }).catch((e) => done(e));
+        } catch (e) {
+          done(e);
+        }
       });
   });
 });
@@ -364,15 +385,18 @@ describe('DELETE /users/me/token', () => {
       .delete('/users/me/token')
       .set('x-auth', users[0].tokens[0].token)
       .expect(200)
-      .end((err, res) => {
+      .end(async (err, res) => {
         if (err) {
           return done(err);
         }
 
-        User.findById(users[0]._id).then((user) => {
+        try {
+          const user = await User.findById(users[0]._id);
           expect(user.tokens.length).toBe(0);
           done();
-        }).catch((e) => done(e));
+        } catch (e) {
+          done(e);
+        }
       });
   });
 });
